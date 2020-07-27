@@ -1,0 +1,73 @@
+For ASA Firewall - copy disk0:/coredumpinfo/coredump.cfg use_ttyS0
+
+ASA Security Levels:- 
+	-ASA classifies the level of "trust" of an interface by it's security level ranging from 0-100.
+	-Where 0 will be least trusted and 100 will be most trusted.
+	-0 is assigned ot all th einterfaces by default.
+	-ASA interfaces can only pass traffice if both "nameif" and "security-level" is defined.
+	-Traffic from higher to lower security level permitted by default.
+	   E.g - Inside to Outside
+	-Traffic from lower to higher security level is denied by default.
+		E.g Outside to Inside
+	-Traffic between same level of security or interfaces with same security level will be denied by default.
+	-Exception with #same-security-traffic permit inter-interface
+	-#same-security-traffic permit intra-interface (Hairpining)
+	-Security levels can be bypassed by inbound or global ACLs.
+	
+ASA Stateful Firewall FIltering 
+	-Enabled by default for TCP/UDP traffic and cannot be disabled .
+	-Track traffic that moves from trusted n/w to the untrusted n/w.
+	-Create an entry in the state table for traffic flow.
+	-Track traffic that tries to enter from the untrusted network to the trusted network.
+	-If there is an entry in the state table permit it or else drop it.
+
+ASA Traffic Inspection
+	-Modular Policy Framework (MPF) used to control how traffic is inspected.
+	-What traffic is inspected, basic layer 3& 4 inspection of TCP,UDP and ICMP.
+	-Application aware inspection of HTTP,SMTP,DNS,SIP etc.
+	-ACLs are used to exempt or include the traffic into MPF engine.
+
+ASA Context MOdes:-
+	-Single Context MOde
+	-Multiple Context Mode(Virtual Firewall)
+	-In single context mode, there will be shared config for all interfaces , security policies , routing table and administrators etc.
+	-In multiple context mode , ther ewill a seperate parameters for all.
+	-Allows for multiple virtual firewalls for managed services or policy seperation.
+
+ASA Firewall Mode
+	-Routed Firewall(By Default)
+	-Transparent Firewall(VPN Termination not possible)
+		.Interfaces can be in same subnet but in diffrent VLANs.
+		.Traffic is bridged between interfaces.
+		.Only one bridge group can be created between two interfaces before 8.4.
+		.Up to 8 bridge with 4 interfaces per bridge-group starting with 8.4.
+
+
+ASA Basic Initialization :- 
+	
+	-There are ways we can use to access the ASA firewall 
+		.CLI base 
+		.ASDM (Cisco Adaptive Security Device Manager)
+		.We can use ASDMA because there are certain tasks which can only be completed using the GUI like SSL VPN Bookmarks,AnyConnect Client Profilies etc.)
+
+Commands used to initialize-
+	#write erase or #clear startup-config
+	#clear configure all (Does not prompt for confirmation)
+	#show firewall
+	#show mode
+	#show run
+	#show running-config all class-map
+	#show running-config all policy-map
+	#show running-config all group-policy
+	#vpnsetup 
+	#vpnsetup site-to-site
+
+Initialize Interfaces 
+	-Enable interfaces by #no shutdown
+	-Choose trunk or Access Mode, create subinterfaces and apply vlan for trunking
+	-Assign security levels 
+	-Assing interfaces name
+	-Assign IP addresses 
+	-ASA do not support DTP(Dynamic Trunking protocol)
+	-
+	

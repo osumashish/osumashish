@@ -1,0 +1,288 @@
+VPN Notes (https://www.youtube.com/watch?v=iDC593HsD8o&list=PLNiDDlsOrmMuoN8-FwPHwxfNsy33hmbg7&index=36)
+
+1. Layer 2 VPNs
+	Ethernet VLANs and QinQ
+	Frame Relay & ATM PVCs	
+	VPLS
+2. Layer 3 VPNs
+	GRE Tunnel
+	MPLS Tunnel
+	IPSec Tunnel
+Why use IPSec VPN?
+	Does not need static SP provisioning.
+	Independent of SDP access.
+	IPv4/IPv6 transport only needed.
+	Allows both site-to-site and remote access VPNs.
+	
+IPSec is a security suite ...
+	Data origin authentication
+	Data Integrity 
+	Data Confidentiality
+	Anti-replay( Not repeated transmission is allowed.)
+It works on Layer 3
+	Different from SSL (7) or 802.1AE(2)
+	Encrypts and authenticates IP Packets
+	Uses symmetric ciphers for encryption(e.g. 3DES)
+	Keyed hashing for authentication of data (MD5).
+
+Used to create P2P associations between tunnel endpoints.
+
+IPSec tunnels are dynamically negotiated with IKEv1/IKEv2.
+	-Main goal is to not have to define crypto keys manually.
+
+IPSec uses two data structures to build a tunnel 
+	-Security Association (SA)
+	  An agreement of IKE/IPSec Parameters
+	  Maintains encryption and authentication keys.
+	-Security Parameter Index (SPI)
+	  Field in packet headr to select SA on receiver.
+	  Similar to VLAN header or MPLS label .
+
+ISAKMP & IKEv1
+
+Negotiation protocols used from SAs
+	Uses bidirectional UDP port 500 connection for transport.
+Internet Security Association and Key Management Protocol (ISAKMP)
+	-ISAKMP is the framework	
+	-Says that authentication and keying should occur
+Internet Key Exchange (IKEv1)
+	-IKE is th eactual implementation 
+	-Defines how auth and keying occurs.
+
+IPSec Tunnel Negotiation 
+	Goal of IPSec exchange is to establish SAs
+	Occurs through two main negotiation phases using IKE1.
+
+	IPSec Phase 1 
+	Main goal is to authenticate the endpoints and build a secure tunnel for phase 2 exchange.
+	Uses ISAKMP and IKEv1 protocols to establish ISAKMP SA.
+	ISAKMP SA creates path for further negotiations.
+
+	IPSec Phase 2
+	Main goal is to establish the encrypted tunnel used to protect the actual user traffic .
+	Creates the IPSec SA used to transport protected traffic.
+
+
+ISAKMP/IKEv1 Workflow-
+	-Occurs in Phase 1 negotiation
+	-Result is the ISAKMP SA
+	Performs additional negotiations 
+	-Occurs in Phase 1.5 negotiation
+	-Extended Authentication (Xauth)
+	-Mode COnfiguration(Mode-Cfg)
+	Negotiate data protection parameters
+	-Occurs inphase 2 negotiation
+	-Result is the IPsec SA
+Negotiating ISAKMP SA
+	During IKEv1 Phase 1 peers exchange and agree upon parameters such as 
+	-Authentication method
+		.PSK/RSA-Sig/RSA-Enc
+	-Encryption Type
+		.DES/3DES/AES
+	-Hash Algorithm 
+		.MD5/SHA1
+	-Deffie-Hellman group 
+		.1,2,5...
+ISAKMP Aythentication
+	-In IKEv1 authentication first performed to verify party identities
+	-In IKEv2 authentication is done after SA etablished 
+	IKEv1 Authentication via
+	-Pre-Shared Keys (PSK)
+		.Host knows same key via out of band exchange 
+	-RSA Signature 
+		.Host trust certificate authority for authentication
+	-RSA encrypted nonces
+
+#Combination of these ISAKMP parameters makes up the ISAKMP Policy
+	-IKE initiator sends all its policies through a proposal
+	-IKE responder checks received policies against its own
+		.First match is used 
+		.Else connection is rejected.
+IPSec Phase 1
+
+IKEv1 Negotiation Mode
+	Two IKEv1 modes define howe proposal process occurs
+	-Main Mode
+		.Uses six messages for negotiation
+		.Takes longer time to negotiate but hides party identities by performing DH exchange first.
+	-Aggressive Mode 
+		.Uses three messages for negotiation
+		.Takes less time to negotiate but does not hide party identities.
+		.Permits for flexible authentication eith pre-shared keys.
+			Ex-- Easy VPN
+
+
+
+IKEv1 Main Mode Message Flows 
+
+	1. Message1: Initiator -> Responder 
+	-Proposals for ISAKMP SA ( cipher/hash/DH group)
+	2.Message 2: Responder -> Initiator
+	-Selected ISAKMP proposal (cipher/hash/DH group)
+	3. Message 3: Initiator -> Responder 
+	-Deffie-HellmanKey-Exchange(KEX) message:based on negotiated DH group
+	4. Responder->Initiator
+	-Deffie-Hellman Key-Exchange (KEX) response : ISAKMP SA Created
+	5. Message 5: Initiator -> Responder 
+	-Initiator Identity Payload (e.e hostname, FQDN,etc)
+	6. Message6: Responder -> Initiator
+	-Receiver identity Payload : Authentication COmpleted.
+
+IKEv1 Aggressive Mode Message Flow-
+	1. Message 1: Initiator-> Responder 
+	-Proposals for ISAKMP SA(cipher/hash/DH group)+ Initiator Identity
+	2. Message 2: Responder -> Initiator 
+	-Selected ISAKMP Proposals + DH KEX +Responder Identity ( no ISAKMP SA yet)
+	3. Message 3: Initiator -> Responder 	
+	-DH KEX + Responder Identity : ISAKMP SA now formed , authentication completed.
+
+
+Negotiating IPSec SA (Phase 2)
+	-During Phase 2 peers exchange and agree upon parameters such as 
+		. Encapsulation protocol , encryption and authentication methods 
+			.ESPvs AH		
+			.MD5(128bits) SHA(160bits) SHA256 SHA384 SHA512
+			.DESvs3DESvsaAES/AES-GCM/AES-GMAC(128bit,192bit,256bits)
+			.Tunnel vs Transport Mode
+	-Proxy Identities
+		.Defines what traffic will be protected
+		.Also called as Proxy ACls
+	-SA Lifetime
+Phase 2 Message Flow 
+
+	Quick Mode 
+	-Phase 2 for IPSec SA uses Quick Mode
+	-Peers were already authenticated in phase 1 so only two messages are needed
+		.Message 1: Initiator->Responder
+			.SA Proposal 	, DH KEX message , Proxy IDs
+		.Message 2: Responder -> Initiator
+			.Selected SA ,DH Kex message , Proxy IDs
+
+IPSec supports two protocols for encapsulations of traffic 
+	-Authentication Header (AH)
+	-Encapsulation Security Payload (ESP)
+	-Security Protocols is negotiated during Phase 2 , called the IPSec Transform set
+
+AH vs ESP 
+
+	AH IP Protocol number is 51 
+	AH , data origin authentication includes IP Header 
+	AH, data integrity
+	Ah, only supports authentication not encryption (rarely used with VPNs)
+
+	ESP IP protocol number is 50
+	ESP , Dat origin authentication excludes IP Header 
+	ESP , Data integrity
+	ESP, Data encryption 
+	ESP, Anti replay
+
+SA Refreshing 
+	-ISAKMP /IPSec SA have finite lifetimes 
+	-Before expiration SA is re-keyed
+	-Lifetime can be in time or bits
+	-Lower value of initiator or receiver is negotiated.
+
+PFS ( Perfect Forward Secrecy )
+	-Can be negotiated during Quick Mode IPSec SA
+	-Casues new DH exchange prior to rekeying (refreshing) IPSec SA
+	-Makes IPSec SA keys completely independent from previous ones
+	-More secure but more CPU overhead.
+
+IPSec Control vs Data Plane
+	IPSec Control Plane (ISAKMP)
+	-UDP 500 (default if no NAT device)
+	-UDP 4500 (default if NAT device)
+	-TCP custome port (only if gateway is ASA)
+		IKEv1 Payload inside TCP 
+	IPSec Data Plane 
+	-ESP or AH ( default if no NAT Device in path )
+	-ESP over UDP 4500 (default if NAT device is in path )
+	-ESP over UDP custom port (only if gateway is ASA)
+	-ESP over TCP custom port (only if gateway is ASA)
+	-AH is not NAT friendly since it authenticates IP header
+
+NAT-T and Transport Tunneling 
+
+	-NAT-T or transport tunneling support negotiated in fist two IKEv1 messages
+	-needs to be supported by both the peers.
+	-NAT-T requirements detected in IKEv1 messages 3 and 4
+	-If NAT-T required IKEv1 messages 5 and 6 change to UDP 4500
+	-If NAT-T required , Phase 2 change ti UDP 4500
+	-UDP destination port is always 4500
+	-UDP original source port is 4500 but changed by PAT device.
+	-NAT_T and transparent tunneling aren't the same thing.
+
+Tunnel vs Transport 
+	-AH & ESP support two mode encapsulation.
+	-Transport 
+		Original IP Header retained 
+		Payload and layer 4 header authenticated and encrypted.
+		Complete packet authenticated with AH 
+		Typically used in host to IPSec
+	-Tunnel 
+		Adds new IP Header 
+		Original header & payload authenticated/encrypted with ESP.
+		Complete packet authenticated with AH 
+		Typically used between IPSec gateways or host to IPSec gateways.
+
+
+IOS LAN to LAN IPSec Configuration 	:-
+
+CryptoMap
+	-Legacy method of IOS IPSec Configuration 	
+		.Still required on ASA Firewall
+	-Used to form on-demand IPSec Tunnels
+		.Session initiated only when interesting traffic detected.
+	-No dynamic routing support through tunnel
+		.Exception on ASA , allowed via OSPF
+CryptoMap Working
+	Crypto map is data plane filter	
+		.Matching traffic triggers ISAKMP session
+		.Traffic matched using ACLs
+		.ACLs define Proxy IDs for IPSec Phase2 
+		.Crypto map apply to physical (sub) interfaces
+		.Only one crypto map per interface 
+		.Always outbound with respect to traffic direction
+		.Processed top down until ACL match occurs
+		.By default interface IP used for ISAKMP tunnel source
+		.Can be changed using #crypto-map local-address
+
+Crypto-Maps Order of Operations 	
+	-Encryption applies after routing
+	-Static routing may be required 
+	-Encryption applies after NAT
+	-NAT exemption may be required 
+	-Rule of thumb is that crypto , routing and NAT processess are always independent of each other.
+
+Configuration Steps :-
+Define IKEv1 Phase 1 IPSec Policy 
+	-Authentication 
+	-Encryption
+	-Hash
+	-DH Group 
+	-Lifetime (Lower value is negotiated)
+	-Like a route -map processesd top down until a match occurs by the responder.
+	-Based on Policy priority
+	-Lower priority value has higher precedence
+
+Define IKEv2 Phase 2 Policy IPSec
+	-Define peer address , hostname
+	-Define proxy ACL
+	-Define transform set
+	-Only tunnel mode supported unless gateway IPs are included in crypto-ACL
+	-Configuration applied with crypto-map
+	-On interface closest to the destination
+	-Multiple routes means multiple interfaces
+
+Default Phase 1 and Phase 2 Policies 
+
+	-IOS includes default fallback policies for both Phase 1 ISAKMP and Phase 2 IPSec
+	-There are eight default iSAKMP policies available
+	-Active untill user-configurable policies are created
+	-Active unless disabled with #no crypto isakmp default policy
+	-There are two default transform-set available 
+	-Active for all crypto-maps IPSec profiles if user-configured set is not applied 
+	-Active unless disabled with #no crypto ipsec transform-set default
+
+
+
